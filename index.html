@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Workshop Agenda Builder</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; }
+    label, select, input, button {
+      width: 100%; padding: 10px; margin-top: 10px;
+    }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc; padding: 10px;
+    }
+    th {
+      background: #eee;
+    }
+  </style>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<h2>Workshop Agenda Builder</h2>
+
+<label for="topic">Topic</label>
+<select id="topic"><option value="">Loading topics...</option></select>
+
+<label for="subtopics">Sub-topic(s)</label>
+<select id="subtopics" multiple size="6" disabled></select>
+
+<label for="startTime">Start Time</label>
+<input type="time" id="startTime">
+
+<label for="duration">Duration (minutes)</label>
+<select id="duration">
+  <option value="30">30</option>
+  <option value="45">45</option>
+  <option value="60" selected>60</option>
+</select>
+
+<label for="mode">Facilitation Mode</label>
+<select id="mode">
+  <option value="">-- Select Mode --</option>
+  <option>Form Responses</option>
+  <option>Discussion</option>
+  <option>Presentation</option>
+  <option>Activity</option>
+  <option>Discussion+Activity</option>
+  <option>Presentation+Activity</option>
+  <option>Presentation+Form Responses</option>
+</select>
+
+<label for="facilitator">Facilitator</label>
+<input type="text" id="facilitator" placeholder="Facilitator Name" />
+
+<button onclick="addToAgenda()">Add to Agenda</button>
+
+<h3>Agenda</h3>
+<table id="agendaTable">
+  <thead>
+    <tr>
+      <th>Time</th>
+      <th>Session</th>
+      <th>Learning Objective</th>
+      <th>Mode</th>
+      <th>Facilitator</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<button onclick="downloadExcel()">Download as Excel</button>
+
+<script>
+const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTA9WJB4yhBjiiE7nUo34v-VcN6wK-2HyMqXxU_WHTWs4xwtKc72fF4tmaKxCf9RrJ0W2s6vdJgbYFo/pub?gid=0&single=true&output=csv";
+
+const topicSelect = document.getElementById("topic");
+const subTopicSelect = document.getElementById("subtopics");
+const agendaBody = document.querySelector("#agendaTable tbody");
+
+fetch(csvUrl)
+  .then(res => res.text())
+  .then(csv => {
+    const rows = csv.trim().split("\n").map(row => row.split(","));
+    const headers = rows[0];
+console.log("Headers found:", headers);
+alert("Headers found: " + headers.join(", "));
+    const clean = str => str.replace(/\uFEFF/g, '').trim().toLowerCase();
+const lowerHeaders = headers.map(clean);
+const topicIdx = lowerHeaders.findIndex(h => h === 'topic');
+const subIdx = lowerHeaders.findIndex(h => h === 'sub-topic');
+    if (topicIdx === -1 || subIdx === -1) {
+      alert("CSV must have 'Topic' and 'Sub-topic' headers.");
+      return;
+    }
+
+    const topicMap = {};
+    rows.slice(1).forEach(row => {
+      const topic = row[topicIdx]?.trim();
+      const sub = row[subIdx]?.trim();
+      if (!topic || !sub) return;
+      if (!topicMap[topic]) topicMap[topic] = [];
+      if (!topicMap[topic].includes(sub)) topicMap[topic].push(sub);
+    });
+
+    topicSelect.innerHTML = '<option value="">-- Select Topic --</option>';
+    Object.keys(topicMap).forEach(topic => {
+      topicSelect.add(new Option(topic, topic));
+    });
+
+    topicSelect.addEventListener("change", () => {
+      subTopicSelect.innerHTML = "";
+      const subs = topicMap[topicSelect.value] || [];
+      subs.forEach(sub => subTopicSelect.add(new Option(sub, sub)));
+      subTopicSelect.disabled = subs.length === 0;
+    });
+  })
+  .catch(err => {
+    console.error("CSV Load Error:", err);
+    alert("Failed to fetch data from Google Sheet.");
+  });
+
+function toDate(timeStr) {
+  const [h, m] = timeStr.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0);
+  return d;
+}
+
+function formatTime(d) {
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function addToAgenda() {
+  const subs = Array.from(subTopicSelect.selectedOptions).map(o => o.value);
+  const time = document.getElementById("startTime").value;
+  const dur = parseInt(document.getElementById("duration").value);
+  const mode = document.getElementById("mode").value;
+  const facilitator = document.getElementById("facilitator").value || "—";
+
+  if (!subs.length || !time || !dur || !mode) {
+    alert("Please complete all fields.");
+    return;
+  }
+
+  const start = toDate(time);
+  const end = new Date(start.getTime() + dur * 60000);
+  const timeSlot = `${formatTime(start)} – ${formatTime(end)}`;
+
+  subs.forEach(sub => {
+    const row = agendaBody.insertRow();
+    row.insertCell().textContent = timeSlot;
+    row.insertCell().textContent = sub;
+    row.insertCell().textContent = `Understand ${sub}`;
+    row.insertCell().textContent = mode;
+    row.insertCell().textContent = facilitator;
+  });
+
+  // Reset form
+  topicSelect.value = "";
+  subTopicSelect.innerHTML = "";
+  subTopicSelect.disabled = true;
+  document.getElementById("startTime").value = "";
+  document.getElementById("mode").value = "";
+  document.getElementById("facilitator").value = "";
+}
+
+function downloadExcel() {
+  const data = [["Time", "Session", "Learning Objective", "Mode", "Facilitator"]];
+  document.querySelectorAll("#agendaTable tbody tr").forEach(row => {
+    const cells = Array.from(row.cells).map(cell => cell.textContent);
+    data.push(cells);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Agenda");
+  XLSX.writeFile(wb, "Workshop_Agenda.xlsx");
+}
+</script>
+
+</body>
+</html>
