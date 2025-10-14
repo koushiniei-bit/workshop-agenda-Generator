@@ -1,26 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Workshop Agenda Builder</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 30px; }
-    label, select, input, button {
-      width: 100%; padding: 10px; margin-top: 10px;
-    }
-    table {
-      width: 100%; border-collapse: collapse; margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ccc; padding: 10px;
-      text-align: left;
-    }
-    th {
-      background: #ffa500; /* orange header */
-      color: #000;
-    }
+    label, select, input, button { width: 100%; padding: 10px; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    th { background: #ffa500; }
     .day-row {
-      background-color: #5b9bd5; 
+      background-color: #5b9bd5;
       color: white;
       font-weight: bold;
       text-align: center;
@@ -29,191 +19,176 @@
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-<h2>Workshop Agenda Builder</h2>
+  <h2>Workshop Agenda Builder</h2>
 
-<label for="day">Day</label>
-<select id="day">
-  <option value="">-- Select Day --</option>
-  <option>Day 1</option>
-  <option>Day 2</option>
-  <option>Day 3</option>
-  <option>Day 4</option>
-  <option>Day 5</option>
-</select>
+  <!-- 🆕 Add day header only when needed -->
+  <label for="dayHeader">Add Day Section (optional)</label>
+  <select id="dayHeader">
+    <option value="">-- Select Day (only if needed) --</option>
+    <option>Day 1</option>
+    <option>Day 2</option>
+    <option>Day 3</option>
+    <option>Day 4</option>
+    <option>Day 5</option>
+  </select>
+  <button onclick="addDayHeader()">➕ Add Day Header</button>
 
-<label for="topic">Topic</label>
-<select id="topic"><option value="">Loading topics...</option></select>
+  <!-- agenda inputs -->
+  <label for="topic">Topic</label>
+  <select id="topic"><option value="">Loading topics...</option></select>
 
-<label for="subtopics">Sub-topic(s)</label>
-<select id="subtopics" multiple size="6" disabled></select>
+  <label for="subtopics">Sub-topic(s)</label>
+  <select id="subtopics" multiple size="6" disabled></select>
 
-<label for="startTime">Start Time</label>
-<input type="time" id="startTime">
+  <label for="startTime">Start Time</label>
+  <input type="time" id="startTime">
 
-<label for="duration">Duration (minutes)</label>
-<select id="duration">
-  <option value="30">30</option>
-  <option value="45">45</option>
-  <option value="60" selected>60</option>
-</select>
+  <label for="duration">Duration (minutes)</label>
+  <select id="duration">
+    <option value="30">30</option>
+    <option value="45">45</option>
+    <option value="60" selected>60</option>
+  </select>
 
-<label for="mode">Facilitation Mode</label>
-<select id="mode">
-  <option value="">-- Select Mode --</option>
-  <option>Form Responses</option>
-  <option>Discussion</option>
-  <option>Presentation</option>
-  <option>Activity</option>
-  <option>Discussion+Activity</option>
-  <option>Presentation+Activity</option>
-  <option>Presentation+Form Responses</option>
-</select>
+  <label for="mode">Facilitation Mode</label>
+  <select id="mode">
+    <option value="">-- Select Mode --</option>
+    <option>Form Responses</option>
+    <option>Discussion</option>
+    <option>Presentation</option>
+    <option>Activity</option>
+    <option>Discussion+Activity</option>
+    <option>Presentation+Activity</option>
+    <option>Presentation+Form Responses</option>
+  </select>
 
-<label for="facilitator">Facilitator</label>
-<input type="text" id="facilitator" placeholder="Facilitator Name" />
+  <label for="facilitator">Facilitator</label>
+  <input type="text" id="facilitator" placeholder="Facilitator Name" />
 
-<button onclick="addToAgenda()">Add to Agenda</button>
+  <button onclick="addToAgenda()">Add to Agenda</button>
 
-<h3>Agenda</h3>
-<table id="agendaTable">
-  <thead>
-    <tr>
-      <th>Time</th>
-      <th>Session</th>
-      <th>Learning Objective</th>
-      <th>Mode</th>
-      <th>Facilitator</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <h3>Agenda</h3>
+  <table id="agendaTable">
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Session</th>
+        <th>Learning Objective</th>
+        <th>Mode</th>
+        <th>Facilitator</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-<button onclick="downloadExcel()">Download as Excel</button>
+  <button onclick="downloadExcel()">Download as Excel</button>
 
-<script>
-const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTA9WJB4yhBjiiE7nUo34v-VcN6wK-2HyMqXxU_WHTWs4xwtKc72fF4tmaKxCf9RrJ0W2s6vdJgbYFo/pub?gid=0&single=true&output=csv";
-const topicSelect = document.getElementById("topic");
-const subTopicSelect = document.getElementById("subtopics");
-const agendaBody = document.querySelector("#agendaTable tbody");
+  <script>
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTA9WJB4yhBjiiE7nUo34v-VcN6wK-2HyMqXxU_WHTWs4xwtKc72fF4tmaKxCf9RrJ0W2s6vdJgbYFo/pub?gid=0&single=true&output=csv";
+    const topicSelect = document.getElementById("topic");
+    const subTopicSelect = document.getElementById("subtopics");
+    const agendaBody = document.querySelector("#agendaTable tbody");
 
-let daysAdded = new Set(); // track which days already have headers
+    // Load topics/subtopics
+    fetch(csvUrl)
+      .then(res => res.text())
+      .then(csv => {
+        const rows = csv.trim().split("\n").map(row => row.split(","));
+        const headers = rows[0];
+        const clean = str => str.replace(/\uFEFF/g, '').trim().toLowerCase();
+        const lowerHeaders = headers.map(clean);
+        const topicIdx = lowerHeaders.findIndex(h => h === 'topic');
+        const subIdx = lowerHeaders.findIndex(h => h === 'sub-topic');
+        if (topicIdx === -1 || subIdx === -1) {
+          alert("CSV must have 'Topic' and 'Sub-topic' headers.");
+          return;
+        }
+        const topicMap = {};
+        rows.slice(1).forEach(row => {
+          const topic = row[topicIdx]?.trim();
+          const sub = row[subIdx]?.trim();
+          if (!topic || !sub) return;
+          if (!topicMap[topic]) topicMap[topic] = [];
+          if (!topicMap[topic].includes(sub)) topicMap[topic].push(sub);
+        });
+        topicSelect.innerHTML = '<option value="">-- Select Topic --</option>';
+        Object.keys(topicMap).forEach(topic => topicSelect.add(new Option(topic, topic)));
+        topicSelect.addEventListener("change", () => {
+          subTopicSelect.innerHTML = "";
+          const subs = topicMap[topicSelect.value] || [];
+          subs.forEach(sub => subTopicSelect.add(new Option(sub, sub)));
+          subTopicSelect.disabled = subs.length === 0;
+        });
+      })
+      .catch(() => alert("Failed to fetch data from Google Sheet."));
 
-// Fetch topics/subtopics
-fetch(csvUrl)
-  .then(res => res.text())
-  .then(csv => {
-    const rows = csv.trim().split("\n").map(row => row.split(","));
-    const headers = rows[0];
-    const clean = str => str.replace(/\uFEFF/g, '').trim().toLowerCase();
-    const lowerHeaders = headers.map(clean);
-    const topicIdx = lowerHeaders.findIndex(h => h === 'topic');
-    const subIdx = lowerHeaders.findIndex(h => h === 'sub-topic');
-    if (topicIdx === -1 || subIdx === -1) {
-      alert("CSV must have 'Topic' and 'Sub-topic' headers.");
-      return;
+    function toDate(timeStr) {
+      const [h, m] = timeStr.split(":").map(Number);
+      const d = new Date();
+      d.setHours(h, m, 0);
+      return d;
     }
 
-    const topicMap = {};
-    rows.slice(1).forEach(row => {
-      const topic = row[topicIdx]?.trim();
-      const sub = row[subIdx]?.trim();
-      if (!topic || !sub) return;
-      if (!topicMap[topic]) topicMap[topic] = [];
-      if (!topicMap[topic].includes(sub)) topicMap[topic].push(sub);
-    });
+    function formatTime(d) {
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
 
-    topicSelect.innerHTML = '<option value="">-- Select Topic --</option>';
-    Object.keys(topicMap).forEach(topic => {
-      topicSelect.add(new Option(topic, topic));
-    });
+    function addDayHeader() {
+      const day = document.getElementById("dayHeader").value;
+      if (!day) return alert("Please select a day to add.");
+      const row = agendaBody.insertRow();
+      const cell = row.insertCell();
+      cell.colSpan = 5;
+      cell.textContent = day.toUpperCase();
+      row.classList.add("day-row");
+      document.getElementById("dayHeader").value = "";
+    }
 
-    topicSelect.addEventListener("change", () => {
+    function addToAgenda() {
+      const subs = Array.from(subTopicSelect.selectedOptions).map(o => o.value);
+      const time = document.getElementById("startTime").value;
+      const dur = parseInt(document.getElementById("duration").value);
+      const mode = document.getElementById("mode").value;
+      const facilitator = document.getElementById("facilitator").value || "—";
+
+      if (!subs.length || !time || !dur || !mode) {
+        alert("Please complete all fields (except Day Header).");
+        return;
+      }
+
+      const start = toDate(time);
+      const end = new Date(start.getTime() + dur * 60000);
+      const timeSlot = `${formatTime(start)} – ${formatTime(end)}`;
+
+      subs.forEach(sub => {
+        const row = agendaBody.insertRow();
+        row.insertCell().textContent = timeSlot;
+        row.insertCell().textContent = sub;
+        row.insertCell().textContent = `Understand ${sub}`;
+        row.insertCell().textContent = mode;
+        row.insertCell().textContent = facilitator;
+      });
+
+      topicSelect.value = "";
       subTopicSelect.innerHTML = "";
-      const subs = topicMap[topicSelect.value] || [];
-      subs.forEach(sub => subTopicSelect.add(new Option(sub, sub)));
-      subTopicSelect.disabled = subs.length === 0;
-    });
-  })
-  .catch(err => {
-    console.error("CSV Load Error:", err);
-    alert("Failed to fetch data from Google Sheet.");
-  });
-
-function toDate(timeStr) {
-  const [h, m] = timeStr.split(":").map(Number);
-  const d = new Date();
-  d.setHours(h, m, 0);
-  return d;
-}
-
-function formatTime(d) {
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function addToAgenda() {
-  const day = document.getElementById("day").value;
-  const subs = Array.from(subTopicSelect.selectedOptions).map(o => o.value);
-  const time = document.getElementById("startTime").value;
-  const dur = parseInt(document.getElementById("duration").value);
-  const mode = document.getElementById("mode").value;
-  const facilitator = document.getElementById("facilitator").value || "—";
-
-  if (!day || !subs.length || !time || !dur || !mode) {
-    alert("Please complete all fields (including Day).");
-    return;
-  }
-
-  // Add DAY header only once per unique day
-  if (!daysAdded.has(day)) {
-    const dayRow = agendaBody.insertRow();
-    const cell = dayRow.insertCell();
-    cell.colSpan = 5; // span across all columns
-    cell.textContent = day.toUpperCase();
-    dayRow.classList.add("day-row");
-    daysAdded.add(day);
-  }
-
-  // Add sessions for the selected day
-  const start = toDate(time);
-  const end = new Date(start.getTime() + dur * 60000);
-  const timeSlot = `${formatTime(start)} – ${formatTime(end)}`;
-
-  subs.forEach(sub => {
-    const row = agendaBody.insertRow();
-    row.insertCell().textContent = timeSlot;
-    row.insertCell().textContent = sub;
-    row.insertCell().textContent = `Understand ${sub}`;
-    row.insertCell().textContent = mode;
-    row.insertCell().textContent = facilitator;
-  });
-
-  // Reset form inputs
-  document.getElementById("day").value = "";
-  topicSelect.value = "";
-  subTopicSelect.innerHTML = "";
-  subTopicSelect.disabled = true;
-  document.getElementById("startTime").value = "";
-  document.getElementById("mode").value = "";
-  document.getElementById("facilitator").value = "";
-}
-
-function downloadExcel() {
-  const data = [["Time", "Session", "Learning Objective", "Mode", "Facilitator"]];
-  document.querySelectorAll("#agendaTable tbody tr").forEach(row => {
-    const isDayRow = row.classList.contains("day-row");
-    if (isDayRow) {
-      data.push([row.cells[0].textContent, "", "", "", ""]);
-    } else {
-      const cells = Array.from(row.cells).map(cell => cell.textContent);
-      data.push(cells);
+      subTopicSelect.disabled = true;
+      document.getElementById("startTime").value = "";
+      document.getElementById("mode").value = "";
+      document.getElementById("facilitator").value = "";
     }
-  });
 
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Agenda");
-  XLSX.writeFile(wb, "Workshop_Agenda.xlsx");
-}
-</script>
+    function downloadExcel() {
+      const data = [["Time", "Session", "Learning Objective", "Mode", "Facilitator"]];
+      document.querySelectorAll("#agendaTable tbody tr").forEach(row => {
+        const isDayRow = row.classList.contains("day-row");
+        if (isDayRow) data.push([row.cells[0].textContent, "", "", "", ""]);
+        else data.push(Array.from(row.cells).map(c => c.textContent));
+      });
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Agenda");
+      XLSX.writeFile(wb, "Workshop_Agenda.xlsx");
+    }
+  </script>
 </body>
 </html>
